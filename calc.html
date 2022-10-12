@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Calculator</title>
+	<script>
+		const calcWidth = 200
+		const buttonWidth = calcWidth / 4
+		const numbersWidth = buttonWidth * 3
+		const fontSizeBaseDivider = 1.25
+		const displayCharacterLimitBeforeFontChange = 8
+
+		let acc = 0
+		let lastOperation = "="
+		let appendToDisplay = false
+	
+		function gen() {
+			const main = document.getElementById("main")
+
+			// Everything in the calculator grouped
+			const calc = document.createElement("div")
+			calc.style.width = calcWidth + "px"
+			calc.style.borderStyle = "solid"
+			calc.style.borderWidth = "3px"
+			calc.style.borderColor = "#d2e5fa"
+			calc.style.float = "left"
+			main.appendChild(calc)
+
+			// Output window
+			const display = document.createElement("div")
+			display.style.width = calcWidth + "px"
+			display.style.height = buttonWidth + "px"
+			display.style.backgroundColor = "#cceeff"
+			display.style.textAlign = "right"
+			display.id = "calc_display"
+			calc.appendChild(display)
+			printToDisplay("0")
+
+			// Top, left, right, bottom - everything that is under the display
+			const keypad = document.createElement("div")
+			calc.appendChild(keypad)
+			
+			// Backspace and clear
+			const top = document.createElement("div")
+			top.style.width = calcWidth + "px"
+			top.style.float = "left"
+			keypad.appendChild(top)
+
+			// Numbers from 9 to 1
+			const left = document.createElement("div")
+			left.style.width = numbersWidth + "px"
+			left.style.float = "left"
+			keypad.appendChild(left)
+
+			// Addition, subtraction, multiplication
+			const right = document.createElement("div")
+			right.style.width = buttonWidth + "px"
+			right.style.float = "right"
+			keypad.appendChild(right)
+			
+			// Zero, point, equals and division
+			const bottom = document.createElement("div")
+			bottom.style.width = calcWidth + "px"
+			keypad.appendChild(bottom)
+
+			createAndAddKey("CL", backspace, top, 2)
+			createAndAddKey("C", clearBuffer, top)
+			createAndAddKey("+", operation, top)
+
+			const numOrder = [7, 8, 9, 4, 5, 6, 1, 2, 3]
+			for (let num of numOrder) {
+				createAndAddKey(num, write, left)
+			}
+
+			createAndAddKey("-", operation, right)
+			createAndAddKey("*", operation, right)
+			createAndAddKey("/", operation, right)
+
+			createAndAddKey("0", write, bottom, 2)
+			createAndAddKey(".", write, bottom)
+			createAndAddKey("=", operation, bottom)
+		}
+		
+		function createAndAddKey(label, func, container, widthInKeys = 1) {
+			const target = document.createElement("button")
+			target.innerText = label
+			target.onclick = func
+			target.dataset.value = label
+			target.style.width = (widthInKeys * buttonWidth) + "px"
+			target.style.height = buttonWidth + "px"
+			target.style.fontSize = getFontSizeForLengthForDisplay(String(label).length) + "px"
+			container.appendChild(target)
+		}
+		
+		function write() {
+			if (!isNaN(this.dataset.value) || this.dataset.value === ".") {
+				const display = document.getElementById("calc_display")
+				if (display.textContent === "0" || appendToDisplay === false) {
+					if (this.dataset.value === ".")
+						printToDisplay("0.")
+					else
+						printToDisplay(this.dataset.value)
+					appendToDisplay = true
+				} else {
+					printToDisplay(display.textContent + this.dataset.value)
+				}
+			}
+		}
+		
+		function operation() {
+			switch (lastOperation) {
+				case "+":
+					acc = acc + displayAsFloat()
+					break
+				case "-":
+					acc = acc - displayAsFloat()
+					break
+				case "*":
+					acc = acc * displayAsFloat()
+					break
+				case "/":
+					let divider = displayAsFloat()
+
+					if (divider === 0) {
+						printToDisplay("Cannot divide by zero.")
+						appendToDisplay = false
+						lastOperation = "="
+						return
+					} else {
+						acc = acc / displayAsFloat()
+					}
+
+					break
+				case "=":
+					acc = displayAsFloat()
+			}
+			
+			printToDisplay(toFixedWithoutTrailingZeros(acc))
+			appendToDisplay = false
+			lastOperation = this.dataset.value
+		}
+
+		function toFixedWithoutTrailingZeros(value) {
+			return value.toFixed(6).replace(/\.?0*$/,'');
+		}
+
+		function printToDisplay(value) {
+			const display = document.getElementById("calc_display")
+
+			display.style.fontSize = getFontSizeForLengthForDisplay(String(value).length) + "px"
+			display.textContent = value
+		}
+
+		function getFontSizeForLengthForDisplay(length = 0) {
+			if (length <= displayCharacterLimitBeforeFontChange) {
+				return buttonWidth / fontSizeBaseDivider
+			} else {
+				return buttonWidth / (fontSizeBaseDivider + (Math.abs(length - displayCharacterLimitBeforeFontChange) * 0.12))
+			}
+		}
+
+		function displayAsFloat() {
+			return parseFloat(document.getElementById("calc_display").textContent)
+		}
+
+		function clearBuffer() {
+			acc = 0
+			lastOperation = "="
+			printToDisplay("0")
+		}
+
+		function backspace() {
+			const display = document.getElementById("calc_display")
+			let newText = display.textContent.slice(0, -1)
+
+			if (newText === "" || newText === "-")
+				printToDisplay("0")
+			else
+				printToDisplay(newText)
+		}
+	</script>
+</head>
+<body onload="gen()">
+	<div id="main">
+	</div>
+</body>
+</html>
