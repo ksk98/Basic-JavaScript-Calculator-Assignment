@@ -62,7 +62,7 @@ p {
     text-indent: 30pt;
 }
 
-.a, a {
+a {
     color: #00007F;
     font-family:"Segoe UI", sans-serif;
     font-style: normal;
