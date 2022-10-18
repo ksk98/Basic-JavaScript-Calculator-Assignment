@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        * {
+            font-family:"Segoe UI", sans-serif;
+        }
+
+        .ttt-box {
+
+        }
+
+        .ttt-board {
+            /*(150+3+3)*3 */
+            height: 468px;
+            width: 468px;
+            border: 3px solid rgb(111, 113, 115);
+        }
+
+        .ttt-field {
+            height: 150px;
+            width: 150px;
+            border: 3px groove;
+            background-color: rgba(64, 59, 63, 0.33);
+            font-size: 150px;
+            font-weight: bold;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 150px;
+        }
+
+        .ttt-panel {
+
+        }
+
+        .ttt-turn-indicator {
+            width: 150px;
+            height: 30px;
+            float: left;
+            text-align: center;
+            vertical-align: middle;
+            line-height: 30px;
+            font-weight: bold;
+        }
+
+        .ttt-reset-button {
+            width: 174px;
+            height: 30px;
+            float: left;
+        }
+    </style>
+    <script>
+        const colorX ="#ea7907"
+        const colorO = "#32a852"
+        const colorDraw = "#1f8efc"
+        const defaultColor = "#3b3b3b"
+        const boardWidthInFields = 3
+        let playerXTurn
+        let moves
+        let gameOver
+
+        function onLoad() {
+            generateBox()
+            generateBoard()
+            generateBottomPanel()
+            reset()
+        }
+
+        function generateBox() {
+            const main = document.getElementById("main")
+
+            const box = document.createElement("div")
+            box.id = "ttt-box"
+            box.setAttribute("class", "ttt-box")
+            main.appendChild(box)
+        }
+
+        function generateBoard() {
+            const box = document.getElementById("ttt-box")
+
+            const board = document.createElement("div")
+            board.id = "ttt-board"
+            board.setAttribute("class", "ttt-board")
+            box.appendChild(board)
+
+            for (let i = 0; i < boardWidthInFields*boardWidthInFields; i++) {
+                const field = document.createElement("div")
+                field.id = "ttt-field" + i
+                field.setAttribute("class", "ttt-field")
+                field.dataset.fieldId = "" + i
+                field.dataset.x = "" + i % boardWidthInFields;
+                field.dataset.y = "" + Math.floor(i / boardWidthInFields)
+                field.style.float = "left"
+                field.setAttribute("onclick", "markField(this)")
+                board.appendChild(field)
+            }
+        }
+
+        function generateBottomPanel() {
+            const box = document.getElementById("ttt-box")
+
+            const panel = document.createElement("div")
+            panel.id = "ttt-panel"
+            panel.setAttribute("class", "ttt-panel")
+            box.appendChild(panel)
+
+            const turnIndicatorX = document.createElement("div")
+            turnIndicatorX.id = "ttt-turn-indicator-X"
+            turnIndicatorX.setAttribute("class", "ttt-turn-indicator")
+            panel.appendChild(turnIndicatorX)
+
+            const resetButton = document.createElement("button")
+            resetButton.id = "ttt-reset-button"
+            resetButton.setAttribute("class", "ttt-reset-button")
+            resetButton.textContent = "RESET"
+            resetButton.setAttribute("onclick", "reset()")
+            panel.appendChild(resetButton)
+
+            const turnIndicatorY = document.createElement("div")
+            turnIndicatorY.id = "ttt-turn-indicator-O"
+            turnIndicatorY.setAttribute("class", "ttt-turn-indicator")
+            panel.appendChild(turnIndicatorY)
+        }
+
+        function reset() {
+            for (let i = 0; i < boardWidthInFields*boardWidthInFields; i++) {
+                const field = document.getElementById("ttt-field" + i)
+                field.textContent = ""
+                field.dataset.value = null
+            }
+
+            playerXTurn = false
+            moves = -1
+            gameOver = false
+            tickTurn()
+        }
+
+        function tickTurn() {
+            const board = document.getElementById("ttt-board")
+            const indicatorX = document.getElementById("ttt-turn-indicator-X")
+            const indicatorY = document.getElementById("ttt-turn-indicator-O")
+
+            playerXTurn = !playerXTurn
+            if (playerXTurn === true) {
+                updateIndicator(indicatorX, "X MOVES", colorX)
+                updateIndicator(indicatorY, "", defaultColor)
+                board.style.borderColor = colorX
+            } else {
+                updateIndicator(indicatorY, "O MOVES", colorO)
+                updateIndicator(indicatorX, "", defaultColor)
+                board.style.borderColor = colorO
+            }
+
+            moves += 1
+            if (moves === boardWidthInFields*boardWidthInFields) {
+                updateIndicator(indicatorX, "DRAW", colorDraw)
+                updateIndicator(indicatorY, "DRAW", colorDraw)
+                board.style.borderColor = colorDraw
+            }
+        }
+
+        function isMarkedBy(xy, symbol) {
+            const field = getField(xy)
+            return field !== null && field.dataset.value === symbol
+        }
+
+        function getField(xy) {
+            return document.getElementById("ttt-field" + xy)
+        }
+
+        function getXYFor(x, y) {
+            return (parseInt(x) + parseInt(y) * boardWidthInFields)
+        }
+
+        function updateIndicator(indicator, text, color) {
+            indicator.textContent = text
+            indicator.style.backgroundColor = color
+        }
+
+        function markField(field) {
+            if (field.dataset.value !== "null" || gameOver)
+                return
+
+            let symbol
+            if (playerXTurn) symbol = "X"
+            else symbol = "O"
+
+            field.textContent = symbol
+            field.dataset.value = symbol
+
+            if (!moveWon(field))
+                tickTurn()
+            else {
+                const board = document.getElementById("ttt-board")
+                const indicatorX = document.getElementById("ttt-turn-indicator-X")
+                const indicatorY = document.getElementById("ttt-turn-indicator-O")
+
+                if (playerXTurn) {
+                    updateIndicator(indicatorY, "X WON", colorX)
+                    updateIndicator(indicatorX, "X WON", colorX)
+                    board.style.borderColor = colorX
+                } else {
+                    updateIndicator(indicatorY, "O WON", colorO)
+                    updateIndicator(indicatorX, "O WON", colorO)
+                    board.style.borderColor = colorO
+                }
+
+                gameOver = true
+            }
+        }
+
+        function moveWon(recentlyUpdatedField) {
+            return checkWinHorizontallyFor(recentlyUpdatedField) || checkWinVerticallyFor(recentlyUpdatedField) ||
+                checkWinDiagonallyFor(recentlyUpdatedField) || checkWinDiagonallyFor(recentlyUpdatedField, true);
+        }
+
+        function checkWinHorizontallyFor(field) {
+            let count = 0
+            for (let i = 0; i < boardWidthInFields; i++) {
+                if (isMarkedBy(getXYFor(i, field.dataset.y), field.dataset.value)) {
+                    count += 1
+                }
+            }
+
+            return count === boardWidthInFields
+        }
+
+        function checkWinVerticallyFor(field) {
+            let count = 0
+            for (let i = 0; i < boardWidthInFields; i++) {
+                if (isMarkedBy(getXYFor(field.dataset.x, i), field.dataset.value)) {
+                    count += 1
+                }
+            }
+
+            return count === boardWidthInFields
+        }
+
+        function checkWinDiagonallyFor(field, mirrored = false) {
+            if (field.dataset.x !== field.dataset.y)
+                return false
+
+            let count = 0
+            for (let i = 0; i < boardWidthInFields; i++) {
+                let y
+                if (mirrored) y = boardWidthInFields - i
+                else y = i
+
+                if (isMarkedBy(getXYFor(i, y), field.dataset.value)) {
+                    count += 1
+                }
+            }
+
+            return count === boardWidthInFields
+        }
+    </script>
+</head>
+<body onload="onLoad()">
+    <div id="main">
+
+    </div>
+</body>
+</html>
