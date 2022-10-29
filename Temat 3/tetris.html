@@ -6,68 +6,299 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
     <style>
-    #main {
-        width: 640px;
-        height: 480px;
-        margin: auto;
-        border: 1px solid black;
-    }
+        #main {
+            width: 550px;
+            height: 880px;
+            margin: auto;
+            position: relative;
+        }
+
+        #title_board {
+            width: 408px;
+            background-color: #528cd7;
+            border: 6px outset #0e64c7;
+            text-align: center;
+            text-shadow: 4px 4px rgba(0, 0, 0, 0.09);
+            font-size: 48px;
+            font-weight: bolder;
+            letter-spacing: 20px;
+        }
+
+        #game_board {
+            width: 400px;
+            height: 800px;
+            border: 10px groove #0e64c7;
+            background-color: black;
+        }
+
+        #main_panel {
+            float: left;
+            width: 428px;
+        }
+
+        #side_panel {
+            width: 112px;
+            height: 5%;
+            background-color: #3f81d7;
+            border: 4px outset #0e64c7;
+            position: absolute;
+            left: 75%;
+            bottom: 0;
+        }
+
+        #score_panel {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
     <script>
+        const blockWidth = 40
+        const gameWidth = 10, gameHeight = 20
+        const blocks = []
+
+        const colors = [
+            'rgba(252, 186, 3, 1)', 'rgba(252, 44, 3, 1)', 'rgba(198, 222, 42, 1)',
+            'rgba(120, 222, 42)', 'rgba(55, 212, 112, 1)', 'rgba(21, 212, 208, 1)',
+            'rgba(21, 126, 212, 1)', 'rgba(21, 28, 212, 1)', 'rgba(158, 21, 212, 1)'
+        ]
+        const shapes = [
+            [[0, 0], [0, 1], [0, 2], [0, 3]],   // I
+            [[-1, 0], [0, 0], [0, 1], [1, 0]],   // T
+            [[0, 0], [1, 0], [0, 1], [1, 1]],   // O
+            [[0, 0], [0, 1], [0, 2], [1, 2]],   // L
+            [[0, 0], [0, 1], [0, 2], [-1, 2]],  // J
+            [[-1, 1], [0, 1], [0, 0], [1, 0]], // S
+            [[-1, 0], [0, 0], [0, 1], [1, 1]]    // Z
+        ]
+        let currentShape = null
+        let currentPos = null
+        let currentColor = null
+
         let canvas
         let ctx
-        let pos_x = 320, pos_y = 300
-        let welcome_screen = true
+        let gameInProgress = false
+        let intervalId
+        let points = 0
 
-        function draw_hero() {
+        function clearBlocks() {
+            for (let x = 0; x < gameWidth; x++) {
+                blocks[x] = []
+                for (let y = 0; y < gameHeight; y++) {
+                    blocks[x][y] = null
+                }
+            }
+        }
+
+        function getCanvasPosForXY(x, y) {
+            return [x * blockWidth, y * blockWidth]
+        }
+
+        function getRandomColor() {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function getRandomShape() {
+            // Return a copy of shape
+            return [...shapes[Math.floor(Math.random() * shapes.length)]]
+        }
+
+        function drawBlocks() {
             ctx.save()
-            ctx.fillStyle = 'rgba(255, 0, 0, 1)'
-            ctx.translate(pos_x, pos_y)
-            ctx.fillRect(0, 0, 10, 30)
+
+            let canvasPos
+            for (let x = 0; x < gameWidth; x++) {
+                for (let y = 0; y < gameHeight; y++) {
+                    if (blocks[x][y] == null) continue
+
+                    ctx.fillStyle = blocks[x][y]
+                    canvasPos = getCanvasPosForXY(x, y)
+                    ctx.fillRect(canvasPos[0], canvasPos[1], blockWidth, blockWidth)
+                }
+            }
+
             ctx.restore()
         }
 
+        function clearCanvas() {
+            ctx.clearRect(0, 0, blockWidth * gameWidth, blockWidth * gameHeight)
+        }
+
         function redraw() {
-            ctx.clearRect(0, 0, 640, 480)
-            draw_hero()
+            clearCanvas()
+            drawBlocks()
+        }
+
+        function tick() {
+            if (currentShape == null || !shapeCanBeMovedTo(currentShape, currentPos[0], currentPos[1] + 1)) {
+                if (!spawnNewShape()) {
+                    stopGame()
+                    return
+                }
+            } else {
+                moveFigure(0, 1)
+            }
+
+            redraw()
+        }
+
+        function spawnNewShape() {
+            currentPos = [Math.floor(gameWidth/2), 0]
+            currentShape = getRandomShape()
+            if (!shapeCanBeMovedTo(currentShape,currentPos[0], currentPos[1]))
+                return false
+
+            currentColor = getRandomColor()
+            drawCurrentShapeOnCurrentPos()
+
+            return true
         }
 
         function init() {
             window.addEventListener("keydown", keyListener, false)
             canvas = document.getElementById('game')
             ctx = canvas.getContext('2d')
-            ctx.font = '48px sans-serif'
-            ctx.textAlign = 'center'
-            ctx.fillText('READY PLAYER ONE?', 320, 240)
-            draw_hero()
+            clearBlocks()
         }
+
+        function startGame() {
+            clearCanvas()
+            gameInProgress = true
+            intervalId = window.setInterval(tick, 500)
+        }
+
+        function stopGame() {
+            gameInProgress = false
+            window.clearInterval(intervalId)
+            alert("Game over B)")
+        }
+
         function keyListener(e) {
-            if (welcome_screen) {
-                ctx.clearRect(0, 0, 640, 480)
-                welcome_screen = false
-                window.setInterval(redraw, 10)
+            if (!gameInProgress) {
+                startGame()
+                return
             }
 
             switch(e.keyCode) {
+                case 32:
+                    // Space bar
+                    flip()
+                    break
                 case 37:
-                    pos_x -= 10
+                    // Left
+                    if (shapeCanBeMovedTo(currentShape, currentPos[0] - 1, currentPos[1]))
+                        moveFigure(-1, 0)
                     break
                 case 38:
+                    // Up
+                    flip()
                     break
                 case 39:
-                    pos_x += 10
+                    // Right
+                    if (shapeCanBeMovedTo(currentShape, currentPos[0] + 1, currentPos[1]))
+                        moveFigure(1, 0)
                     break
                 case 40:
+                    // Down
+                    if (shapeCanBeMovedTo(currentShape, currentPos[0], currentPos[1] + 1))
+                        moveFigure(0, 1)
                     break
             }
+        }
+
+        function clearCurrentShapeOnCurrentPos() {
+            currentShape.forEach(block => blocks[currentPos[0] + block[0]][currentPos[1] + block[1]] = null)
+            redraw()
+        }
+
+        function drawCurrentShapeOnCurrentPos() {
+            currentShape.forEach(block => blocks[currentPos[0] + block[0]][currentPos[1] + block[1]] = currentColor)
+            redraw()
+        }
+
+        // X and Y are relative to current position
+        function moveFigure(x, y) {
+            clearCurrentShapeOnCurrentPos()
+
+            currentPos[0] += x
+            currentPos[1] += y
+
+            drawCurrentShapeOnCurrentPos()
+
+            redraw()
+        }
+
+        function shapeCanBeMovedTo(shape, x, y) {
+            for (let i = 0; i < shape.length; i++) {
+                const block = shape[i]
+                const currentX = block[0] + x
+                const currentY = block[1] + y
+                if (isOccupied(currentX, currentY) && !squareBelongsToCurrentFigure(currentX, currentY))
+                    return false
+            }
+
+            return true
+        }
+
+        function squareBelongsToCurrentFigure(x, y) {
+            for (let i = 0; i < currentShape.length; i++) {
+                const block = currentShape[i]
+
+                const currentX = currentPos[0] + block[0]
+                const currentY = currentPos[1] + block[1]
+
+                if (currentX === x && currentY === y) return true
+            }
+
+            return false
+        }
+
+        function isOccupied(x, y) {
+            return x < 0 || x > gameWidth-1 || y < 0 || y > gameHeight-1 || blocks[x][y] != null
+        }
+
+        function flip() {
+            const newShape = []
+            // Deep copy
+            currentShape.forEach(block => newShape.push([block[0], block[1]]))
+
+            if (!shapeCanBeMovedTo(newShape, currentPos[0], currentPos[1])) return
+
+            newShape.forEach(block => {
+                const oldX = block[0]
+                const oldY = block[1]
+                block[0] = oldY * -1
+                block[1] = oldX
+            })
+
+            clearCurrentShapeOnCurrentPos()
+            currentShape = newShape
+            drawCurrentShapeOnCurrentPos()
+
+            redraw()
         }
     </script>
 </head>
 <body onload="init()">
     <div id="main">
-        <canvas id="game" width="640" height="480">
-            Zacznij w końcu używać współczesnej przeglądarki!
-        </canvas>
+        <div id="main_panel">
+            <div id="title_board">
+                TETRIS
+            </div>
+            <div id="game_board">
+                <canvas id="game" width="400" height="800">
+                    Zacznij w końcu używać współczesnej przeglądarki!
+                </canvas>
+            </div>
+        </div>
+        <div id="side_panel">
+            <div id="score_panel">
+                SCORE:
+                <div id="score_output">
+                    000000
+                </div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
