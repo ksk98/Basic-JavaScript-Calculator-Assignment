@@ -81,6 +81,16 @@
         let intervalId
         let points = 0
 
+        function cleanGame() {
+            clearBlocks()
+            currentShape = null
+            currentPos = null
+            currentColor = null
+            points = 0
+            addPoints(0)
+            gameInProgress = false
+        }
+
         function clearBlocks() {
             for (let x = 0; x < gameWidth; x++) {
                 blocks[x] = []
@@ -149,35 +159,41 @@
         }
 
         function removeLinesIfNecessary() {
-            const fullLines = countFullLinesFromBottomPartOfCurrentShape()
-            if (fullLines === 0) return
-            const lowestPoint = getLowestPointOfCurrentShape()
+            const fullLines = getFullLinesY()
+            if (fullLines.length === 0) return
 
             let newBlocks = []
             for (let x = 0; x < gameWidth; x++) {
                 newBlocks[x] = []
+                let fullLinesInd = 0
                 for (let y = gameHeight-1; y >= 0; y--) {
-                    if (y > lowestPoint)
-                        newBlocks[x][y] = blocks[x][y]
-                    else if (y < fullLines)
+                    if (y - fullLinesInd < 0) {
                         newBlocks[x][y] = null
-                    else
-                        newBlocks[x][y] = blocks[x][y - fullLines]
+                    } else {
+                        while (fullLines.includes(y - fullLinesInd))
+                            fullLinesInd += 1
+
+                        newBlocks[x][y] = blocks[x][y - fullLinesInd]
+                    }
                 }
             }
 
             blocks = newBlocks
-            addPoints(fullLines * 100)
+            addPoints(fullLines.length * 100)
         }
 
-        function countFullLinesFromBottomPartOfCurrentShape() {
-            let linesFull = 0
+        function getFullLinesY() {
+            let linesFull = []
             for (let y = getLowestPointOfCurrentShape(); y >= 0; y--) {
+                let lineFull = true
                 for (let x = 0; x < gameWidth; x++) {
-                    if (blocks[x][y] == null) return linesFull
+                    if (blocks[x][y] == null) {
+                        lineFull = false
+                        break
+                    }
                 }
-
-                linesFull += 1
+                if (lineFull)
+                    linesFull.push(y)
             }
 
             return linesFull
@@ -227,6 +243,7 @@
             gameInProgress = false
             window.clearInterval(intervalId)
             alert("Game over B)")
+            cleanGame()
         }
 
         function keyListener(e) {
