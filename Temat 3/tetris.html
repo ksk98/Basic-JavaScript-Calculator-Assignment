@@ -55,7 +55,7 @@
     <script>
         const blockWidth = 40
         const gameWidth = 10, gameHeight = 20
-        const blocks = []
+        let blocks = []
 
         const colors = [
             'rgba(252, 186, 3, 1)', 'rgba(252, 44, 3, 1)', 'rgba(198, 222, 42, 1)',
@@ -88,6 +88,12 @@
                     blocks[x][y] = null
                 }
             }
+        }
+
+        function addPoints(amount) {
+            points += amount
+            const scoreDisplay = document.getElementById("score_output")
+            scoreDisplay.textContent = String(points).padStart(6, '0')
         }
 
         function getCanvasPosForXY(x, y) {
@@ -131,6 +137,7 @@
 
         function tick() {
             if (currentShape == null || !shapeCanBeMovedTo(currentShape, currentPos[0], currentPos[1] + 1)) {
+                removeLinesIfNecessary()
                 if (!spawnNewShape()) {
                     stopGame()
                     return
@@ -138,16 +145,65 @@
             } else {
                 moveFigure(0, 1)
             }
-
             redraw()
         }
 
+        function removeLinesIfNecessary() {
+            const fullLines = countFullLinesFromBottomPartOfCurrentShape()
+            if (fullLines === 0) return
+            const lowestPoint = getLowestPointOfCurrentShape()
+
+            let newBlocks = []
+            for (let x = 0; x < gameWidth; x++) {
+                newBlocks[x] = []
+                for (let y = gameHeight-1; y >= 0; y--) {
+                    if (y > lowestPoint)
+                        newBlocks[x][y] = blocks[x][y]
+                    else if (y < fullLines)
+                        newBlocks[x][y] = null
+                    else
+                        newBlocks[x][y] = blocks[x][y - fullLines]
+                }
+            }
+
+            blocks = newBlocks
+            addPoints(fullLines * 100)
+        }
+
+        function countFullLinesFromBottomPartOfCurrentShape() {
+            let linesFull = 0
+            for (let y = getLowestPointOfCurrentShape(); y >= 0; y--) {
+                for (let x = 0; x < gameWidth; x++) {
+                    if (blocks[x][y] == null) return linesFull
+                }
+
+                linesFull += 1
+            }
+
+            return linesFull
+        }
+
+        function getLowestPointOfCurrentShape() {
+            if (currentShape == null || currentPos == null) return -1
+
+            // Lowest in this case means the biggest value because position (0, 0) is the top left corner
+            let lowest = 0
+            currentShape.forEach(block => {
+                if (block[1] + currentPos[1] > lowest)
+                    lowest = block[1] + currentPos[1]
+            })
+
+            return lowest
+        }
+
         function spawnNewShape() {
-            currentPos = [Math.floor(gameWidth/2), 0]
-            currentShape = getRandomShape()
-            if (!shapeCanBeMovedTo(currentShape,currentPos[0], currentPos[1]))
+            const newPos = [Math.floor(gameWidth/2), 0]
+            const newShape = getRandomShape()
+            if (!shapeCanBeMovedTo(newShape, newPos[0], newPos[1], true))
                 return false
 
+            currentPos = newPos
+            currentShape = newShape
             currentColor = getRandomColor()
             drawCurrentShapeOnCurrentPos()
 
@@ -179,6 +235,7 @@
                 return
             }
 
+            if (currentShape == null) return
             switch(e.keyCode) {
                 case 32:
                     // Space bar
@@ -228,13 +285,17 @@
             redraw()
         }
 
-        function shapeCanBeMovedTo(shape, x, y) {
+        function shapeCanBeMovedTo(shape, x, y, ignoreBelongsToCurrentFigure = false) {
             for (let i = 0; i < shape.length; i++) {
                 const block = shape[i]
                 const currentX = block[0] + x
                 const currentY = block[1] + y
-                if (isOccupied(currentX, currentY) && !squareBelongsToCurrentFigure(currentX, currentY))
+                if (isOccupied(currentX, currentY)) {
+                    if (!ignoreBelongsToCurrentFigure && squareBelongsToCurrentFigure(currentX, currentY))
+                        continue
+
                     return false
+                }
             }
 
             return true
@@ -262,14 +323,14 @@
             // Deep copy
             currentShape.forEach(block => newShape.push([block[0], block[1]]))
 
-            if (!shapeCanBeMovedTo(newShape, currentPos[0], currentPos[1])) return
-
             newShape.forEach(block => {
                 const oldX = block[0]
                 const oldY = block[1]
                 block[0] = oldY * -1
                 block[1] = oldX
             })
+
+            if (!shapeCanBeMovedTo(newShape, currentPos[0], currentPos[1])) return
 
             clearCurrentShapeOnCurrentPos()
             currentShape = newShape
