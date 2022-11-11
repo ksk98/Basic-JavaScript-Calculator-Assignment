@@ -1,3 +1,5 @@
+const { v4: uuidv4 } = require('uuid');
+
 module.exports = {
     listImages,
     createImage,
@@ -6,9 +8,9 @@ module.exports = {
     deleteImage
 };
 
-const testData = {
-    "0123456789abcd": {
-        id: "0123456789abcd",
+const db = {
+    "ff086076-37bb-468b-9316-1a65c60e07e8": {
+        id: "ff086076-37bb-468b-9316-1a65c60e07e8",
         title: "Testowy obrazek",
         description: "Opis do obrazka",
         date: "2017-11-09T10:20:00.214Z",
@@ -17,15 +19,13 @@ const testData = {
     }
 };
 
-const { v4: uuidv4 } = require('uuid');
-
-function listImages(req, res, next) {
+function listImages(req, res) {
     const out = []
-    for (let elem in testData) {
+    for (let elem in db) {
         out.push({
-            id: testData[elem].id,
-            title: testData[elem].title,
-            path: testData[elem].path
+            id: db[elem].id,
+            title: db[elem].title,
+            path: db[elem].path
         })
     }
 
@@ -34,7 +34,7 @@ function listImages(req, res, next) {
     });
 }
 
-function createImage(req, res, next) {
+function createImage(req, res) {
     const image = {
         id: uuidv4(),
         title: req.body.name,
@@ -44,18 +44,38 @@ function createImage(req, res, next) {
         size: (new TextEncoder().encode(req.body.upFile)).length
     }
 
-    testData[image.id] = image
+    db[image.id] = image
     res.json(image);
 }
 
-function readImage(req, res, next) {
-    res.json(testData);
+function readImage(req, res) {
+    const id = req.params.id
+    const out = db[id]
+
+    if (out) res.json(out)
+    else {
+        res.status(404)
+        res.send()
+    }
 }
 
-function updateImage(req,res,next) {
-    res.json();
+function updateImage(req, res) {
+    const id = req.params.id
+    const out = db[id]
+
+    if (out) {
+        out.title = req.body.title
+        out.description = req.body.description
+        out.date = req.body.date
+    } else createImage(req, res)
+
+    res.json(db[id]);
 }
 
-function deleteImage(req, res, next) {
-    res.json();
+function deleteImage(req, res) {
+    const id = req.params.id
+    if (id in db) {
+        delete db[id]
+        res.json({id: id, status: true})
+    } else res.json({id: id, status: false})
 }
