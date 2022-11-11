@@ -33,7 +33,7 @@ paths:
       description: Add image to list with upload
       requestBody:
         content:
-          application/x-www-form-urlencoded:
+          application/json:
             schema:
               $ref: '#/components/schemas/ImageUpload'
       responses:
