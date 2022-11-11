@@ -1,0 +1,189 @@
+openapi: 3.0.3
+info:
+  title: Node Gallery
+  version: 0.1.0
+paths:
+  /:
+    x-swagger-router-controller: homepage
+    get:
+      operationId: homepage
+      responses:
+        200:
+          description: Success
+  /image:
+    x-swagger-router-controller: image
+    get:
+      operationId: listImages
+      description: Get list of all images.
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageListResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createImage
+      description: Add image to list with upload
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ImageUpload'
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /image/{id}:
+    x-swagger-router-controller: image
+    get:
+      operationId: readImage
+      description: Get image with selected id
+      parameters:
+        - name: id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateImage
+      description: Update image with selected id.
+      parameters:
+        - name: id
+          schema:
+            type: string
+          in: path
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageUpdate"
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageResponse"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteImage
+      description: Delete image with selected id.
+      parameters:
+        - name: id
+          schema:
+            type: string
+          in: path
+          required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationStatus"
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /swagger:
+    x-swagger-pipe: swagger_raw
+components:
+  schemas:
+    ImageUpload:
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        upFile:
+          type: string
+          format: binary
+    ImageListResponse:
+      properties:
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+              path:
+                type: string
+    ImageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+        path:
+          type: string
+        size:
+          type: integer
+    ImageUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+          format: date-time
+    OperationStatus:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+    ErrorResponse:
+      required:
+        - message
+      properties:
+        message:
+          type: string
