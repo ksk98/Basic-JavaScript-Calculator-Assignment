@@ -362,13 +362,14 @@ components:
           type: string
           example: pierogi@bigos.pl
     Admin:
-      type: object
-#      $ref: '#/components/schemas/User'
-      properties:
-        permissions:
-          type: array
-          items:
-            type: string
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            permissions:
+              type: array
+              items:
+                type: string
     Gallery:
       type: object
       properties:
