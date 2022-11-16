@@ -1,4 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
+const model = require(__dirname + "/../models/models.js");
 
 module.exports = {
     listImages,

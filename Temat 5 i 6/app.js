@@ -2,7 +2,7 @@ const api = require('./api')
 const YAML = require('yamljs')
 const express = require('express')
 const bodyParser = require('body-parser')
-const swaggerUi = require('swagger-ui-express');
+const swaggerUi = require('swagger-ui-express')
 const { connector } = require('swagger-routes-express')
 
 const makeApp = () => {
