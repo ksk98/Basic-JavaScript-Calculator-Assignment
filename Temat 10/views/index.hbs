@@ -1,0 +1,21 @@
+<h1>{{ title }}</h1>
+
+<p>{{ parameter }}</p>
+
+<p>{{ tablica }}</p>
+
+<p>{{ zmienna }}</p>
+
+<ul>
+    {{# each tablica }}
+            <li>{{ this }}</li>
+    {{/each}}
+</ul>
+
+{{# each items }}
+    <div>
+        <img src="{{ this.sciezka }}/{{ this.nazwa }}.png" alt="..." width="200">
+        nazwa: {{ this.nazwa }} rozmiar: {{ this.rozmiar }}kb
+        <br />
+    </div>
+{{/each}}
